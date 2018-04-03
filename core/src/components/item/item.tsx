@@ -1,4 +1,4 @@
-import { Component, Element, Listen, Prop, State } from '@stencil/core';
+import { Component, Element, Listen, Prop } from '@stencil/core';
 import { createThemedClasses, getElementClassMap, openURL } from '../../utils/theme';
 import { CssClassMap } from '../../index';
 
@@ -11,11 +11,10 @@ import { CssClassMap } from '../../index';
   }
 })
 export class Item {
-  private itemStyles: { [key: string]: CssClassMap } = {};
+
+  private childStyles: CssClassMap = {};
 
   @Element() private el: HTMLElement;
-
-  @State() hasStyleChange: boolean;
 
   /**
    * The color to use from your Sass `$colors` map.
@@ -61,23 +60,20 @@ export class Item {
   itemStyle(ev: UIEvent) {
     ev.stopPropagation();
 
-    let hasChildStyleChange = false;
-
-    const tagName: string = (ev.target as HTMLElement).tagName;
-    const updatedStyles: any = ev.detail;
-
-    for (const key in updatedStyles) {
-      if (('item-' + key) !== key) {
-        Object.defineProperty(updatedStyles, 'item-' + key, Object.getOwnPropertyDescriptor(updatedStyles, key));
-        delete updatedStyles[key];
-        hasChildStyleChange = true;
+    const updatedStyles = ev.detail as any;
+    const updatedKeys = Object.keys(ev.detail);
+    const childStyles = {} as any;
+    let hasStyleChange = false;
+    for (const key of updatedKeys) {
+      const itemKey = `item-${key}`;
+      const newValue = updatedStyles[key];
+      if (newValue !== this.childStyles[itemKey]) {
+        hasStyleChange = true;
       }
+      childStyles[itemKey] = newValue;
     }
-
-    this.itemStyles[tagName] = updatedStyles;
-
-    if (hasChildStyleChange) {
-      this.hasStyleChange = true;
+    if (hasStyleChange) {
+      this.childStyles = childStyles;
     }
   }
 
@@ -93,12 +89,6 @@ export class Item {
   }
 
   render() {
-    let childStyles = {};
-
-    for (const key in this.itemStyles) {
-      childStyles = Object.assign(childStyles, this.itemStyles[key]);
-    }
-
     const clickable = !!(this.href || this.el.onclick || this.button);
 
     const TagType = clickable
@@ -112,14 +102,12 @@ export class Item {
     const showDetail = this.detail != null ? this.detail : (this.mode === 'ios' && clickable);
 
     const themedClasses = {
-      ...childStyles,
+      ...this.childStyles,
       ...createThemedClasses(this.mode, this.color, 'item'),
       ...getElementClassMap(this.el.classList),
       'item-disabled': this.disabled,
       'item-detail-push': showDetail,
     };
-
-    this.hasStyleChange = false;
 
     return (
       <TagType

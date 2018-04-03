@@ -136,7 +136,7 @@ export class Tabs implements NavOutlet {
   }
 
   @Method()
-  getTab(tabOrIndex: string | number | HTMLIonTabElement): HTMLIonTabElement {
+  getTab(tabOrIndex: string | number | HTMLIonTabElement): HTMLIonTabElement|undefined {
     if (typeof tabOrIndex === 'string') {
       return this.tabs.find(tab => tab.getTabId() === tabOrIndex);
     }
@@ -257,9 +257,9 @@ export class Tabs implements NavOutlet {
     return Promise.resolve(false);
   }
 
-  private shouldSwitch(selectedTab: HTMLIonTabElement) {
+  private shouldSwitch(selectedTab: HTMLIonTabElement|undefined): selectedTab is HTMLIonTabElement {
     const leavingTab = this.selectedTab;
-    return selectedTab && selectedTab !== leavingTab && !this.transitioning;
+    return !!(selectedTab && selectedTab !== leavingTab && !this.transitioning);
   }
 
   render() {

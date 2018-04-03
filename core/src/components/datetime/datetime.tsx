@@ -12,7 +12,6 @@ import {
   dateValueRange,
   daysInMonth,
   getValueFromFormat,
-  isBlank,
   parseDate,
   parseTemplate,
   renderDatetime,
@@ -237,7 +236,7 @@ export class Datetime {
     this.emitStyle();
   }
 
-  emitStyle() {
+  private emitStyle() {
     clearTimeout(this.styleTmr);
 
     this.styleTmr = setTimeout(() => {
@@ -249,15 +248,12 @@ export class Datetime {
     });
   }
 
-  /**
-   * Update the datetime text and datetime value
-   */
-  updateValue() {
+  private updateValue() {
     updateDate(this.datetimeValue, this.value);
     this.updateText();
   }
 
-  buildPicker(pickerOptions: PickerOptions) {
+  private buildPicker(pickerOptions: PickerOptions) {
     console.debug('Build Datetime: Picker with', pickerOptions);
 
     // If the user has not passed in picker buttons,
@@ -293,7 +289,7 @@ export class Datetime {
     return picker;
   }
 
-  open() {
+  private open() {
     const pickerOptions = {...this.pickerOptions};
 
     // TODO check this.isFocus() || this.disabled
@@ -315,10 +311,7 @@ export class Datetime {
     });
   }
 
-
-  /**
-   */
-  generateColumns(): PickerColumn[] {
+  private generateColumns(): PickerColumn[] {
     let columns: PickerColumn[] = [];
 
     // if a picker format wasn't provided, then fallback
@@ -344,7 +337,7 @@ export class Datetime {
       parseTemplate(template).forEach((format: any) => {
         // loop through each format in the template
         // create a new picker column to build up with data
-        const key = convertFormatToKey(format);
+        const key = convertFormatToKey(format)!;
         let values: any[];
 
         // check if they have exact values to use for this date part
@@ -393,10 +386,7 @@ export class Datetime {
     return columns;
   }
 
-  /**
-   * @private
-   */
-  validate() {
+  private validate() {
     const today = new Date();
     const minCompareVal = dateDataSortValue(this.datetimeMin);
     const maxCompareVal = dateDataSortValue(this.datetimeMax);
@@ -409,10 +399,13 @@ export class Datetime {
         selectedYear = yearCol.options[0].value;
       }
 
-      const yearOpt = yearCol.options[yearCol.selectedIndex];
-      if (yearOpt) {
-        // they have a selected year value
-        selectedYear = yearOpt.value;
+      const selectedIndex = yearCol.selectedIndex;
+      if (selectedIndex != null) {
+        const yearOpt = yearCol.options[selectedIndex];
+        if (yearOpt) {
+          // they have a selected year value
+          selectedYear = yearOpt.value;
+        }
       }
     }
 
@@ -446,30 +439,27 @@ export class Datetime {
     );
   }
 
-
-  /**
-   */
-  calcMinMax(now?: Date) {
+  private calcMinMax(now?: Date) {
     const todaysYear = (now || new Date()).getFullYear();
 
     if (this.yearValues) {
       const years = convertToArrayOfNumbers(this.yearValues, 'year');
-      if (isBlank(this.min)) {
+      if (this.min == null) {
         this.min = Math.min.apply(Math, years);
       }
-      if (isBlank(this.max)) {
+      if (this.max == null) {
         this.max = Math.max.apply(Math, years);
       }
     } else {
-      if (isBlank(this.min)) {
+      if (this.min == null) {
         this.min = (todaysYear - 100).toString();
       }
-      if (isBlank(this.max)) {
+      if (this.max == null) {
         this.max = todaysYear.toString();
       }
     }
-    const min = this.datetimeMin = parseDate(this.min);
-    const max = this.datetimeMax = parseDate(this.max);
+    const min = this.datetimeMin = parseDate(this.min) || {};
+    const max = this.datetimeMax = parseDate(this.max) || {};
 
     min.year = min.year || todaysYear;
     max.year = max.year || todaysYear;
@@ -501,10 +491,7 @@ export class Datetime {
     }
   }
 
-
-  /**
-   */
-  validateColumn(name: string, index: number, min: number, max: number, lowerBounds: number[], upperBounds: number[]): number {
+  private validateColumn(name: string, index: number, min: number, max: number, lowerBounds: number[], upperBounds: number[]): number {
     const column = this.picker.getColumn(name);
     if (!column) {
       return 0;
@@ -533,7 +520,7 @@ export class Datetime {
         indexMax = Math.max(indexMax, i);
       }
     }
-    const selectedIndex = column.selectedIndex = clamp(indexMin, column.selectedIndex, indexMax);
+    const selectedIndex = column.selectedIndex = clamp(indexMin, column.selectedIndex!, indexMax);
     const opt = column.options[selectedIndex];
     if (opt) {
       return opt.value;
@@ -542,9 +529,7 @@ export class Datetime {
   }
 
 
-  /**
-   */
-  divyColumns(columns: PickerColumn[]): PickerColumn[] {
+  private divyColumns(columns: PickerColumn[]): PickerColumn[] {
     const pickerColumns = columns;
     const columnsWidth: number[] = [];
     let col: PickerColumn;
@@ -554,7 +539,7 @@ export class Datetime {
       columnsWidth.push(0);
 
       for (let j = 0; j < col.options.length; j++) {
-        width = col.options[j].text.length;
+        width = col.options[j].text!.length;
         if (width > columnsWidth[i]) {
           columnsWidth[i] = width;
         }
@@ -580,7 +565,7 @@ export class Datetime {
 
   /**
    */
-  updateText() {
+  private updateText() {
     // create the text of the formatted data
     const template = this.displayFormat || this.pickerFormat || DEFAULT_FORMAT;
     this.text = renderDatetime(template, this.datetimeValue, this.locale);
